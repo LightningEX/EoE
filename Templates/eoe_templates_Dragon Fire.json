@@ -1,0 +1,56 @@
+[
+  {
+    "name": "Ring of Fire",
+    "type": "ring",
+    "desc": "A golden ring with a fiery red stone in the center.",
+    "actions": [],
+    "stat": "attack",
+    "delta": 3,
+    "_id": "c_1772056289503_303",
+    "rarity": "epic"
+  },
+  {
+    "name": "Scaled Body Armor",
+    "type": "armor",
+    "desc": "An unusual looking suit of armor created from crimson red scales.",
+    "actions": [],
+    "defense": 18,
+    "_id": "c_1772056562146_1133",
+    "rarity": "epic"
+  },
+  {
+    "name": "Draconic Sword",
+    "type": "weapon",
+    "desc": "An enchanted sword forged from an ancient metal.",
+    "actions": [],
+    "attack": 18,
+    "_id": "c_1772056602306_1638",
+    "rarity": "epic"
+  },
+  {
+    "name": "Bright Blazing Pure Relic",
+    "type": "relic",
+    "desc": "A relic used for good with a brightly blazing flame inside.",
+    "actions": [],
+    "wisdomBonus": 5,
+    "healPercent": 50,
+    "usedHealing": false,
+    "isPure": true,
+    "isCorrupted": false,
+    "_id": "c_1772056738620_5507",
+    "rarity": "epic"
+  },
+  {
+    "name": "Shadowy Blazing Corrupted Relic",
+    "type": "relic",
+    "desc": "A relic corrupted by dark magic with a shadowy blazing flame inside.",
+    "actions": [],
+    "wisdomBonus": 5,
+    "healPercent": 50,
+    "usedHealing": false,
+    "isPure": false,
+    "isCorrupted": true,
+    "_id": "c_1772056821136_5580",
+    "rarity": "epic"
+  }
+]
