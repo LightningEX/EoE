@@ -1,0 +1,1917 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Echoes of Ember — Text RPG (Relics Affect Endings)</title>
+  <style>
+    :root{
+      --bg:#071018;
+      --panel:#0b1220;
+      --muted:#98a8b9;
+      --accent:#ff6b6b;
+      --glass: rgba(255,255,255,0.03);
+      --card: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#041018,#07131a 70%);color:#e6f0f2;-webkit-font-smoothing:antialiased}
+    .container{max-width:1150px;margin:28px auto;display:grid;grid-template-columns:1fr 360px;gap:20px;padding:20px}
+    .header{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:12px}
+    .title{display:flex;align-items:center;gap:12px}
+    .logo{width:56px;height:56px;border-radius:10px;background:linear-gradient(120deg,#ff8a8a,#ff6b6b 40%, #ffd166 100%);display:flex;align-items:center;justify-content:center;color:#102027;font-weight:700;box-shadow:0 8px 26px rgba(0,0,0,.45)}
+    h1{margin:0;font-size:20px}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+
+    .game-window{background:var(--card);padding:16px;border-radius:12px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 18px 40px rgba(0,0,0,0.6);display:flex;flex-direction:column;min-height:560px;gap:10px}
+    .narrative{background:linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01));border-radius:8px;padding:14px;min-height:240px;overflow:auto;font-size:15px;line-height:1.5;border:1px solid rgba(255,255,255,0.02)}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .choice{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);padding:10px 12px;border-radius:8px;cursor:pointer;transition:all 180ms ease;min-width:fit-content;text-align:left}
+    .choice:hover{transform:translateY(-4px);color:#fff;border-color: rgba(255,107,107,0.28);box-shadow: 0 6px 20px rgba(255,107,107,0.04)}
+
+    /* ---- BUTTON & CHOICE STYLE UPDATED: dark glass / panel look ---- */
+    .btn{
+      padding:9px 12px;
+      border-radius:9px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
+      border:1px solid rgba(255,255,255,0.04);
+      cursor:pointer;
+      color:#e6f0f2;
+      font-weight:600;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.6), inset 0 -1px 0 rgba(255,255,255,0.01);
+      transition: all 160ms ease;
+    }
+    .btn:hover{
+      transform: translateY(-3px);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.65);
+      border-color: rgba(255,255,255,0.06);
+      color: #fff;
+    }
+    .btn:active{ transform: translateY(-1px); }
+
+    .btn.primary{
+      background: linear-gradient(90deg,#ff6b6b 0%, #ffb56b 100%);
+      border: none;
+      color:#07121a;
+      box-shadow: 0 10px 30px rgba(255,107,107,0.12);
+    }
+    .btn.primary:hover{ filter: brightness(1.03); transform: translateY(-3px); }
+
+    /* Apply darker glass look to scene choice buttons as well */
+    .choice{
+      background: linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));
+      border: 1px solid rgba(255,255,255,0.03);
+      color: var(--muted);
+      padding:10px 12px;
+      border-radius:10px;
+      text-align:left;
+      cursor:pointer;
+      transition: all 160ms ease;
+      min-width: fit-content;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+      display:block;
+    }
+    .choice strong{ color: #e6f0f2; font-weight:700; }
+    .choice:hover{
+      transform: translateY(-4px);
+      color: #fff;
+      border-color: rgba(255,107,107,0.28);
+      box-shadow: 0 16px 40px rgba(0,0,0,0.65);
+    }
+    /* -------------------------------------------------------------- */
+
+    .stats{background:var(--panel);padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.02);display:flex;flex-direction:column;gap:12px;min-height:560px}
+    .stat-row{display:flex;justify-content:space-between;align-items:center;gap:8px}
+    .meter{height:10px;background:rgba(255,255,255,0.02);border-radius:999px;overflow:hidden;flex:1;margin-left:10px}
+    .meter > i{display:block;height:100%;background:linear-gradient(90deg,#ff7b7b,#ffd166);border-radius:999px;width:0%;transition:width 420ms linear}
+    .stat-label{font-size:13px;color:var(--muted)}
+    .log{background:rgba(255,255,255,0.02);border-radius:8px;padding:10px;font-size:13px;color:var(--muted);max-height:140px;overflow:auto;border:1px solid rgba(255,255,255,0.015)}
+    .footer{display:flex;justify-content:space-between;gap:10px;align-items:center}
+    .small{font-size:12px;color:var(--muted)}
+    .inventory{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.005));padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.02);max-height:220px;overflow:auto}
+    .item{display:flex;justify-content:space-between;gap:8px;padding:6px;border-radius:6px;background:transparent;border:1px solid rgba(255,255,255,0.01);margin-bottom:6px}
+    .item .meta{font-size:13px;color:var(--muted)}
+    .tag{font-size:12px;color:var(--muted);background:rgba(255,255,255,0.02);padding:4px 6px;border-radius:6px}
+    .ending.special { color: #ffd9a8; }
+    .ending.ember { color: #ffdfb6; }
+    .ending.destroyer { color: #ffb6b6; }
+
+    /* modal settings */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(2,6,12,0.65);display:none;align-items:center;justify-content:center;z-index:60}
+    .modal{background:#07131a;padding:18px;border-radius:12px;max-width:760px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,0.7);border:1px solid rgba(255,255,255,0.03); max-height:86vh; overflow:auto;}
+    .modal h3{margin:0 0 10px 0}
+    .field{display:flex;flex-direction:column;margin-bottom:10px}
+    .field label{font-size:13px;color:var(--muted);margin-bottom:6px}
+    .field input,.field select, .field textarea{padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:#e6f0f2}
+    .toggle{display:flex;align-items:center;gap:8px}
+    .controls-right{display:flex;gap:8px}
+
+    /* developer panel specific */
+    .dev-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .dev-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .dev-note{font-size:12px;color:var(--muted);margin-top:6px}
+
+    /* custom item editor drawer */
+    .drawer {
+      position: fixed;
+      right: -740px;
+      top: 6%;
+      width: 720px;
+      height: 88%;
+      background: linear-gradient(180deg,#07131a,#0b1722);
+      border: 1px solid rgba(255,255,255,0.03);
+      box-shadow: 0 30px 80px rgba(0,0,0,0.8);
+      border-radius: 12px;
+      z-index: 80;
+      transition: right 260ms cubic-bezier(.2,.9,.2,1);
+      padding: 14px;
+      overflow:auto;
+      max-height:88vh;
+    }
+    .drawer.open { right: 12px; }
+    .drawer h4{margin:0 0 8px 0}
+    .actions-list{border:1px dashed rgba(255,255,255,0.03);padding:8px;border-radius:8px;margin-top:6px}
+
+    .group-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+    .group-tab{padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.02);cursor:pointer;border:1px solid rgba(255,255,255,0.02)}
+    .group-tab.active{background:linear-gradient(90deg,#2b3b47,#19232a);border-color:rgba(255,255,255,0.04)}
+
+    @media (max-width:980px){.container{grid-template-columns:1fr; padding:14px}.stats{min-height:260px}.drawer{width:94%;right:-100%;}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title">
+        <div class="logo">EoE</div>
+        <div>
+          <h1>Echoes of Ember</h1>
+          <p class="lead">Relics now boost wisdom, can heal a small percent, and can unlock special endings.</p>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center">
+        <div style="text-align:right">
+          <div class="small">Player</div>
+          <div id="playerName" style="font-weight:700">Player</div>
+        </div>
+        <button class="btn" id="settingsBtn" title="Settings">Settings ⚙️</button>
+      </div>
+    </div>
+
+    <section class="game-window" id="gameWindow" aria-live="polite">
+      <div class="narrative" id="narrative"><!-- narrative --></div>
+
+      <div class="controls" id="choices"><!-- choices --></div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div id="tipText" class="small" style="color:var(--muted)">Tip: Relics can influence endings — keep track of your choices.</div>
+        <div class="controls-right">
+          <button class="btn" id="restartBtn" title="Restart game">Restart</button>
+          <button class="btn primary" id="autoplayBtn" title="Autoplay small demo">Autoplay</button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="stats" aria-label="Player stats">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-size:14px;color:var(--muted)">Health</div>
+          <div style="font-weight:700;font-size:18px" id="hpText">100</div>
+        </div>
+        <div style="width:60%">
+          <div class="meter" aria-hidden><i id="hpMeter"></i></div>
+        </div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-label">Attack</div>
+        <div style="display:flex;align-items:center;width:60%">
+          <div id="attackText" style="font-weight:700;width:34px;text-align:right">5</div>
+          <div class="meter" style="margin-left:10px"><i id="attackMeter"></i></div>
+        </div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-label">Stealth</div>
+        <div style="display:flex;align-items:center;width:60%">
+          <div id="stealthText" style="font-weight:700;width:34px;text-align:right">3</div>
+          <div class="meter" style="margin-left:10px"><i id="stealthMeter"></i></div>
+        </div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-label">Courage</div>
+        <div style="display:flex;align-items:center;width:60%">
+          <div id="courageText" style="font-weight:700;width:34px;text-align:right">0</div>
+          <div class="meter" style="margin-left:10px"><i id="courageMeter"></i></div>
+        </div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-label">Wisdom</div>
+        <div style="display:flex;align-items:center;width:60%">
+          <div id="wisdomText" style="font-weight:700;width:34px;text-align:right">0</div>
+          <div class="meter" style="margin-left:10px"><i id="wisdomMeter"></i></div>
+        </div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-label">Karma</div>
+        <div style="display:flex;align-items:center;width:60%">
+          <div id="karmaText" style="font-weight:700;width:34px;text-align:right">0</div>
+          <div class="meter" style="margin-left:10px"><i id="karmaMeter"></i></div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:8px">Inventory & Coins</div>
+        <div class="inventory" id="inventoryList"></div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px;align-items:center">
+          <div style="font-size:13px;color:var(--muted)">Coins</div>
+          <div id="coinsText" style="font-weight:700">0</div>
+        </div>
+      </div>
+
+      <!-- Morality counters (added, hidden by default) -->
+      <div id="moralityCounters" style="display:none;margin-top:10px">
+        <div style="display:flex;justify-content:space-between"><div class="small">Honor count</div><div class="small" id="honorCount">0</div></div>
+        <div style="display:flex;justify-content:space-between"><div class="small">Dishonor count</div><div class="small" id="dishonorCount">0</div></div>
+      </div>
+
+      <div style="margin-top:auto">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:6px">Event Log</div>
+        <div class="log" id="log"></div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Settings modal -->
+  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true">
+    <div class="modal" role="document" aria-labelledby="settingsTitle">
+      <h3 id="settingsTitle">Game Settings</h3>
+      <div class="field">
+        <label>Player Name</label>
+        <input id="setName" placeholder="Your name" />
+      </div>
+      <div class="field">
+        <label>Difficulty</label>
+        <select id="setDifficulty">
+          <option value="easy">Easy</option>
+          <option value="normal" selected>Normal</option>
+          <option value="hard">Hard</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Random Encounters</label>
+        <div class="toggle"><input type="checkbox" id="setEncounters" checked /> <div class="small" style="margin-left:8px;color:var(--muted)">Enable roaming events between scenes</div></div>
+      </div>
+      <div class="field">
+        <label>Encounter Frequency (chance after each choice, %)</label>
+        <input id="setEncounterFreq" type="range" min="0" max="80" value="28" />
+      </div>
+
+      <!-- Added setting: Show Morality Counters (disabled by default) -->
+      <div class="field">
+        <label>Show Morality Counters</label>
+        <div class="toggle"><input type="checkbox" id="setShowMorality" /> <div class="small" style="margin-left:8px;color:var(--muted)">When enabled, displays Honor and Dishonor counts in the sidebar (disabled by default)</div></div>
+      </div>
+
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+        <button class="btn" id="cancelSettings">Cancel</button>
+        <button class="btn primary" id="saveSettings">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Developer modal (opened with Ctrl+Shift+D) -->
+  <div class="modal-backdrop" id="devModalBackdrop" role="dialog" aria-modal="true" style="display:none">
+    <div class="modal" role="document" aria-labelledby="devPanelTitle" style="max-width:760px">
+      <h3 id="devPanelTitle">Developer Panel</h3>
+
+      <div class="dev-grid">
+        <div class="field">
+          <label>Coins</label>
+          <input id="devCoins" type="number" min="0" />
+        </div>
+        <div class="field">
+          <label>Health (HP)</label>
+          <input id="devHP" type="number" min="0" />
+        </div>
+        <div class="field">
+          <label>Karma</label>
+          <input id="devKarma" type="number" />
+        </div>
+        <div class="field">
+          <label>Honor Count</label>
+          <input id="devHonor" type="number" min="0" />
+        </div>
+        <div class="field">
+          <label>Dishonor Count</label>
+          <input id="devDishonor" type="number" min="0" />
+        </div>
+        <div class="field">
+          <label>Defense</label>
+          <input id="devDefense" type="number" min="0" />
+        </div>
+        <div class="field">
+          <label>Attack</label>
+          <input id="devAttack" type="number" min="0" />
+        </div>
+        <div class="field">
+          <label>Stealth</label>
+          <input id="devStealth" type="number" min="0" />
+        </div>
+        <div class="field">
+          <label>Courage</label>
+          <input id="devCourage" type="number" min="0" />
+        </div>
+        <div class="field">
+          <label>Wisdom</label>
+          <input id="devWisdom" type="number" min="0" />
+        </div>
+      </div>
+
+      <div style="margin-top:8px">
+        <div class="field">
+          <label>Add Item (select then Add)</label>
+          <div style="display:flex;gap:8px">
+            <select id="devItemSelect" style="flex:1"></select>
+            <button class="btn" id="devAddItemBtn">Add</button>
+            <button class="btn" id="devAddRandomBtn">Add Random</button>
+          </div>
+          <div class="dev-note">Items are taken from current loot pools and saved custom templates; relic passive wisdom bonus is applied on pickup.</div>
+        </div>
+
+        <div class="field" style="margin-top:6px">
+          <label>Set Current Scene</label>
+          <div style="display:flex;gap:8px">
+            <select id="devSceneSelect" style="flex:1"></select>
+            <button class="btn" id="devSetSceneBtn">Set Scene</button>
+            <button class="btn" id="devRenderSceneBtn">Render Scene (without modifying history)</button>
+          </div>
+          <div class="dev-note">Setting scene will update state.current and render the scene. "Render Scene" only calls renderScene() with the selected key.</div>
+        </div>
+
+        <div class="dev-actions" style="margin-top:12px">
+          <button class="btn primary" id="devSaveBtn">Save Values</button>
+          <button class="btn" id="devCloseBtn">Close</button>
+          <button class="btn" id="devHealFullBtn">Heal to Max</button>
+          <button class="btn" id="devGiveCoinsMaxBtn">Give +1000 Coins</button>
+          <button class="btn" id="devClearInvBtn">Clear Inventory</button>
+          <button class="btn" id="devUndoBtn">Undo Last Action</button>
+          <button class="btn" id="openCustomEditorBtn">Custom Item Editor</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Item Editor Drawer (side of dev modal) -->
+  <div class="drawer" id="customEditorDrawer" aria-hidden="true">
+    <h4>Custom Item Editor</h4>
+
+    <div class="field">
+      <label>Groups</label>
+      <div class="group-tabs" id="ci_groupTabs"></div>
+      <div style="display:flex;gap:8px;margin-top:6px">
+        <button class="btn" id="ci_newGroupBtn">New Group</button>
+        <button class="btn" id="ci_deleteGroupBtn">Delete Group</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Name</label>
+      <input id="ci_name" placeholder="Item name" />
+    </div>
+
+    <div class="field">
+      <label>Type</label>
+      <select id="ci_type">
+        <option value="consumable">Consumable</option>
+        <option value="weapon">Weapon</option>
+        <option value="armor">Armor</option>
+        <option value="ring">Ring</option>
+        <option value="relic">Relic</option>
+        <option value="misc">Misc</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Rarity / Pool</label>
+      <select id="ci_rarity">
+        <option value="common">Common</option>
+        <option value="rare" selected>Rare</option>
+        <option value="epic">Epic</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>Description</label>
+      <textarea id="ci_desc" rows="2"></textarea>
+    </div>
+
+    <!-- Type-specific fields -->
+    <div id="ci_typeFields">
+      <div class="field" id="ci_weaponFields" style="display:none">
+        <label>Attack</label>
+        <input id="ci_attack" type="number" value="0" />
+      </div>
+      <div class="field" id="ci_armorFields" style="display:none">
+        <label>Defense</label>
+        <input id="ci_defense" type="number" value="0" />
+      </div>
+      <div class="field" id="ci_ringFields" style="display:none">
+        <label>Ring Stat</label>
+        <select id="ci_ringStat"><option value="attack">attack</option><option value="stealth">stealth</option><option value="wisdom">wisdom</option><option value="courage">courage</option></select>
+        <label style="margin-top:6px">Delta</label>
+        <input id="ci_ringDelta" type="number" value="1" />
+      </div>
+      <div class="field" id="ci_consumableFields" style="display:none">
+        <label>Consumable Effect (either HP or coins)</label>
+        <div style="display:flex;gap:8px">
+          <input id="ci_consumeHp" type="number" placeholder="HP (e.g. 12)" />
+          <input id="ci_coinsMin" type="number" placeholder="coinsMin" />
+          <input id="ci_coinsMax" type="number" placeholder="coinsMax" />
+        </div>
+      </div>
+      <div class="field" id="ci_relicFields" style="display:none">
+        <label>Wisdom Bonus</label>
+        <input id="ci_relicWis" type="number" value="0" />
+        <label style="margin-top:6px">Heal Percent (one-time)</label>
+        <input id="ci_relicHeal" type="number" value="0" />
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <label><input type="checkbox" id="ci_relicPure" /> Pure</label>
+          <label><input type="checkbox" id="ci_relicCorrupt" /> Corrupted</label>
+        </div>
+      </div>
+    </div>
+
+    <hr style="border-color:rgba(255,255,255,0.02)" />
+
+    <h4 style="margin-top:8px">Actions (onUse / onCreate)</h4>
+    <div class="field" style="display:flex;gap:8px;align-items:center">
+      <select id="ci_actionKind" style="flex:1">
+        <option value="applyEffect">applyEffect (hp/attack/stealth/wisdom/karma...)</option>
+        <option value="grantCoins">grantCoins (amount)</option>
+        <option value="goToScene">goToScene (sceneKey)</option>
+        <option value="appendLog">appendLog (text)</option>
+        <option value="equip">equip (equip this item when added)</option>
+        <option value="addToInventory">addToInventory (ensure added)</option>
+      </select>
+      <input id="ci_actionParam" placeholder="parameters (JSON or simple value)" style="width:260px" />
+      <button class="btn" id="ci_addActionBtn">Add</button>
+    </div>
+    <div class="actions-list" id="ci_actionsList"><div class="small" style="color:var(--muted)">No actions added.</div></div>
+
+    <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="ci_instantAdd" /> Instantiate into inventory</label>
+      <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="ci_saveTemplate" checked /> Save template (persist)</label>
+      <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="ci_addToLootPool" /> Add to loot pool (rarity)</label>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn primary" id="ci_createBtn">Create Item</button>
+      <button class="btn" id="ci_previewBtn">Preview</button>
+      <button class="btn" id="ci_closeBtn">Close</button>
+      <div style="flex:1"></div>
+      <button class="btn" id="ci_exportBtn">Export Templates</button>
+      <button class="btn" id="ci_importBtn">Import Templates</button>
+      <input id="ci_importFile" type="file" accept="application/json" style="display:none" />
+      <button class="btn" id="ci_clearTemplatesBtn">Clear Templates</button>
+    </div>
+
+    <hr style="border-color:rgba(255,255,255,0.02);margin-top:14px" />
+    <h4>Saved Custom Templates (current group)</h4>
+    <div id="ci_templatesList" style="max-height:220px;overflow:auto;border:1px solid rgba(255,255,255,0.02);padding:8px;border-radius:8px"></div>
+  </div>
+
+  <div style="max-width:1150px;margin:0 auto;padding:0 20px;">
+    <div class="small" style="color:var(--muted);text-align:center;margin-top:12px">Echoes of Ember — Player</div>
+  </div>
+
+  <script>
+    (function(){
+      // --- DOM refs (core) ---
+      const narrativeEl = document.getElementById('narrative');
+      const choicesEl = document.getElementById('choices');
+      const logEl = document.getElementById('log');
+      const restartBtn = document.getElementById('restartBtn');
+      const autoplayBtn = document.getElementById('autoplayBtn');
+      const settingsBtn = document.getElementById('settingsBtn');
+      const modalBackdrop = document.getElementById('modalBackdrop');
+      const setName = document.getElementById('setName');
+      const setDifficulty = document.getElementById('setDifficulty');
+      const setEncounters = document.getElementById('setEncounters');
+      const setEncounterFreq = document.getElementById('setEncounterFreq');
+      const setShowMorality = document.getElementById('setShowMorality');
+      const cancelSettings = document.getElementById('cancelSettings');
+      const saveSettings = document.getElementById('saveSettings');
+      const playerNameEl = document.getElementById('playerName');
+      const tipText = document.getElementById('tipText');
+
+      // --- Dev panel refs ---
+      const devModalBackdrop = document.getElementById('devModalBackdrop');
+      const devCoins = document.getElementById('devCoins');
+      const devHP = document.getElementById('devHP');
+      const devKarma = document.getElementById('devKarma');
+      const devHonor = document.getElementById('devHonor');
+      const devDishonor = document.getElementById('devDishonor');
+      const devAttack = document.getElementById('devAttack');
+      const devStealth = document.getElementById('devStealth');
+      const devCourage = document.getElementById('devCourage');
+      const devWisdom = document.getElementById('devWisdom');
+      const devDefense = document.getElementById('devDefense');
+      const devItemSelect = document.getElementById('devItemSelect');
+      const devAddItemBtn = document.getElementById('devAddItemBtn');
+      const devAddRandomBtn = document.getElementById('devAddRandomBtn');
+      const devSceneSelect = document.getElementById('devSceneSelect');
+      const devSetSceneBtn = document.getElementById('devSetSceneBtn');
+      const devRenderSceneBtn = document.getElementById('devRenderSceneBtn');
+      const devSaveBtn = document.getElementById('devSaveBtn');
+      const devCloseBtn = document.getElementById('devCloseBtn');
+      const devHealFullBtn = document.getElementById('devHealFullBtn');
+      const devGiveCoinsMaxBtn = document.getElementById('devGiveCoinsMaxBtn');
+      const devClearInvBtn = document.getElementById('devClearInvBtn');
+      const devUndoBtn = document.getElementById('devUndoBtn');
+      const openCustomEditorBtn = document.getElementById('openCustomEditorBtn');
+
+      // --- Drawer refs ---
+      const drawer = document.getElementById('customEditorDrawer');
+      const openCustom = document.getElementById('openCustomEditorBtn');
+      const ci_name = document.getElementById('ci_name');
+      const ci_type = document.getElementById('ci_type');
+      const ci_rarity = document.getElementById('ci_rarity');
+      const ci_desc = document.getElementById('ci_desc');
+      const ci_attack = document.getElementById('ci_attack');
+      const ci_defense = document.getElementById('ci_defense');
+      const ci_ringStat = document.getElementById('ci_ringStat');
+      const ci_ringDelta = document.getElementById('ci_ringDelta');
+      const ci_consumeHp = document.getElementById('ci_consumeHp');
+      const ci_coinsMin = document.getElementById('ci_coinsMin');
+      const ci_coinsMax = document.getElementById('ci_coinsMax');
+      const ci_relicWis = document.getElementById('ci_relicWis');
+      const ci_relicHeal = document.getElementById('ci_relicHeal');
+      const ci_relicPure = document.getElementById('ci_relicPure');
+      const ci_relicCorrupt = document.getElementById('ci_relicCorrupt');
+      const ci_actionKind = document.getElementById('ci_actionKind');
+      const ci_actionParam = document.getElementById('ci_actionParam');
+      const ci_addActionBtn = document.getElementById('ci_addActionBtn');
+      const ci_actionsList = document.getElementById('ci_actionsList');
+      const ci_instantAdd = document.getElementById('ci_instantAdd');
+      const ci_saveTemplate = document.getElementById('ci_saveTemplate');
+      const ci_addToLootPool = document.getElementById('ci_addToLootPool');
+      const ci_createBtn = document.getElementById('ci_createBtn');
+      const ci_previewBtn = document.getElementById('ci_previewBtn');
+      const ci_closeBtn = document.getElementById('ci_closeBtn');
+      const ci_exportBtn = document.getElementById('ci_exportBtn');
+      const ci_importBtn = document.getElementById('ci_importBtn');
+      const ci_importFile = document.getElementById('ci_importFile');
+      const ci_clearTemplatesBtn = document.getElementById('ci_clearTemplatesBtn');
+      const ci_templatesList = document.getElementById('ci_templatesList');
+      const ci_groupTabs = document.getElementById('ci_groupTabs');
+      const ci_newGroupBtn = document.getElementById('ci_newGroupBtn');
+      const ci_deleteGroupBtn = document.getElementById('ci_deleteGroupBtn');
+
+      // --- stat elems ---
+      const hpText = document.getElementById('hpText');
+      const hpMeter = document.getElementById('hpMeter');
+      const attackText = document.getElementById('attackText');
+      const attackMeter = document.getElementById('attackMeter');
+      const stealthText = document.getElementById('stealthText');
+      const stealthMeter = document.getElementById('stealthMeter');
+      const courageText = document.getElementById('courageText');
+      const courageMeter = document.getElementById('courageMeter');
+      const wisdomText = document.getElementById('wisdomText');
+      const wisdomMeter = document.getElementById('wisdomMeter');
+      const karmaText = document.getElementById('karmaText');
+      const karmaMeter = document.getElementById('karmaMeter');
+      const inventoryList = document.getElementById('inventoryList');
+      const coinsText = document.getElementById('coinsText');
+
+      // New DOM refs for morality counters (added only)
+      const moralityCountersEl = document.getElementById('moralityCounters');
+      const honorCountEl = document.getElementById('honorCount');
+      const dishonorCountEl = document.getElementById('dishonorCount');
+
+      // --- game state & settings ---
+      let state = {};
+      let autoplayTimer = null;
+      let autoNextTimeout = null;
+      const defaultSettings = {
+        playerName: 'Player',
+        difficulty: 'normal',
+        encountersEnabled: true,
+        encounterFreq: 28,
+        showMorality: false
+      };
+      let settings = Object.assign({}, defaultSettings);
+
+      // --- Tips ---
+      const TIPS = [
+        "Stealth can help you avoid traps and reduce damage.",
+        "Equipping weapons increases attack — armor reduces incoming damage.",
+        "A high wisdom sometimes gives you better outcomes in social encounters.",
+        "Consumables heal you; use them before a tough fight.",
+        "Karma influences ending types — help others when you can.",
+        "You can press 1–4 to choose options quickly when not typing.",
+        "Difficulty affects damage taken and loot quality.",
+        "Relics can unlock special endings if your choices match their nature."
+      ];
+      let tipInterval = null;
+      function showRandomTip(){ tipText.textContent = `Tip: ${TIPS[Math.floor(Math.random()*TIPS.length)]}`; }
+
+      // --- Scenes & LOOT_POOLS (kept from v9) ---
+      const scenes = {
+        start: {
+          title: "A Rain-Soaked Crossroads",
+          text: "Thunder mutes the world. You sit beneath a torn banner. To the north, emberlight promises a town. East, trees lean like watchful sentinels. A wounded traveler coughs nearby.",
+          choices: [
+            { text: "Tend the traveler's wounds (use supplies).", effect: { hp:-5, karma:+1 }, flavor: "You tear a strip of cloth and bind the man's arm; his gratitude is quiet but genuine.", next:"forest", morality:'honor' },
+            { text: "Push on toward the town for shelter.", effect: { karma:-1 }, flavor: "You keep your pace steady — survival sometimes demands hard choices.", next:"town", morality:'neutral' },
+            { text: "Search the traveler's pack while he dozes.", effect: { karma:-2 }, flavor: "You pry the pack open. A glint slips into your palm; guilt tastes metallic.", next:"bandits", morality:'dishonor' }
+          ]
+        },
+        town: {
+          title: "Ember Hollow — Lanterns & Rumors",
+          text: "Cobblestones steam beneath lanterns as villagers hurry past. The inn's hearth smells of stew. The innkeeper watches you as if balancing a coin.",
+          choices: [
+            { text: "Accept a night's room (spend coin).", effect: { hp:+10 }, flavor: "The bed is warped but warm; you wake with clearer thoughts.", next:"ruins", morality:'neutral' },
+            { text: "Ask about a posted reward for a forest menace.", effect: { wisdom:+1 }, flavor: "You read the board aloud and memorize the ledger — knowledge is a tool.", next:"forest", morality:'neutral' },
+            { text: "Bribe the innkeeper for secrets.", effect: { karma:-1, wisdom:+1 }, flavor: "He leans close and whispers shards of information. For a price, tongues loosen.", next:"ruins", morality:'dishonor' }
+          ]
+        },
+        bandits: {
+          title: "A Bandit's Trap",
+          text: "The traveler wakes startled. Shadows coil at the roadside; bandits. A blade you took gleams heavy in your hand.",
+          choices: [
+            { text: "Fight the bandits head-on.", effect: { hp:-20 }, onChoose: (st)=> { if(st.attack < 6) return { extraEffect:{ hp:-30 }, flavor: "Your strikes falter; they swarm you and your wounds are deep." }; return { extraEffect:{ hp:+10 }, flavor: "Your weapon finds a mark; you push them back with force." }; }, next:"ruins", morality:'honor' },
+            { text: "Slip away into the trees, leaving the pack.", effect: { hp:-8, stealth:+1 }, flavor: "You disappear into the underbrush, heart hammering as the world closes behind you.", next:"forest", morality:'neutral' },
+            { text: "Surrender the spoils and beg mercy.", effect: { hp:-10, karma:+1 }, flavor: "You drop your gains and lower your head; their laughter follows you like rain.", next:"ruins", morality:'neutral' }
+          ]
+        },
+        forest: {
+          title: "The Whisperwood",
+          text: "Leaves murmur. The path narrows and light grows thin. A spectral wolf pads into the clearing, its eyes like cooled embers. Beyond, a ruined chapel glows.",
+          choices: [
+            { text: "Stand your ground and fight the wolf.", effect: { hp:-15, courage:+1 }, onChoose: (st)=> { if(st.attack >= 8) return { extraEffect:{ hp:+10 }, flavor: "Your strike is true; the wolf is driven off." }; if(st.stealth >= 4) return { extraEffect:{ hp:-5 }, flavor: "You misstep but recover quickly, wounding it slightly." }; return { extraEffect:{ hp:-35 }, flavor: "The beast is faster than expected; it tears deep." }; }, next:"chapel", morality:'neutral' },
+            { text: "Move silently around the wolf into the chapel.", effect: { wisdom:+2, stealth:+1 }, flavor: "You inch along the roots; every twig a drumbeat — you pass unseen.", next:"chapel", morality:'honor' },
+            { text: "Prepare a small herbal trap and wait.", effect: { wisdom:+1, karma:+1 }, flavor: "You weave a snare scented with sleep-herbs; patience rewards the cautious.", next:"chapel", morality:'neutral' }
+          ]
+        },
+        chapel: {
+          title: "Chapel of Echoing Light",
+          text: "Moonlight through fractured stained glass paints the floor. An old relic on an altar hums with a pulse like a sleeping hearth. When you reach for it, a voice asks your intent.",
+          choices: [
+            { text: "Keep the relic — swear to use it for healing.", effect: { karma:+2, courage:+1 }, flavor: "You feel warmth as the relic recognizes intent. People will remember your mercy.", next:"final", morality:'honor', specialRelicPick: 'keep' },
+            { text: "Shatter the relic — deny power to all.", effect: { wisdom:+2, karma:+1 }, flavor: "You strike. Crystals shiver and scatter; a weight lifts from the world.", next:"final", morality:'honor', specialRelicPick: 'destroy' },
+            { text: "Sell the relic to the highest bidder.", effect: { karma:-3 }, flavor: "Greed tastes sharp; soon you are watched by a shadow who smiles too easily.", next:"ambush", morality:'dishonor', specialRelicPick: 'sell' }
+          ]
+        },
+        ruins: {
+          title: "Sunken Ruins — Stones with Stories",
+          text: "Moss covers broken runes. A guardian speaks with a voice like wind in pipes. He asks you to repair a cracked seal — the task demands sacrifice.",
+          choices: [
+            { text: "Repair the seal, sacrificing health to mend the ward.", effect: { hp:-10, karma:+2, wisdom:+1 }, flavor: "You bind the stones with aching hands; the earth settles in thanks.", next:"final", morality:'honor' },
+            { text: "Pocket the treasure and run.", effect: { karma:-2, courage:+1 }, flavor: "You lift a gem and sprint. The ruins watch you flee.", next:"final", morality:'dishonor' },
+            { text: "Leave it be; some tasks aren't yours.", effect: { wisdom:+1 }, flavor: "You walk away. The choice to abstain is its own strength.", next:"final", morality:'neutral' }
+          ]
+        },
+        ambush: {
+          title: "The Shadow's Net — Ambush",
+          text: "Your sale has drawn attention. Cloaked figures surround you before you can bargain twice. Steel whispers close. This fight is raw — mistakes will cost dearly.",
+          choices: [
+            { text: "Stand and fight the ambushers.", effect: { hp:-40 }, onChoose: (st)=> { if(st.attack >= 10) return { extraEffect:{ hp:+20 }, flavor: "Your practiced strikes break their formation; you escape with wounds but alive." }; if(st.courage >= 2) return { extraEffect:{ hp:+10 }, flavor: "You fight with resolve and minimize damage." }; return { extraEffect:{ hp:-40 }, flavor: "They overwhelm you with numbers and blade; you bleed fast." }; }, next:"final", morality:'neutral' },
+            { text: "Drop everything and run into the wild.", effect: { hp:-25 }, onChoose: (st)=> { if(st.stealth >= 4) return { extraEffect:{ hp:-10 }, flavor: "You pick a narrow path and slip away, losing far less than expected." }; return { flavor: "You lash into the trees, but a hidden dagger finds you as you flee." }; }, next:"deep_forest", morality:'neutral' },
+            { text: "Kneel and bargain for your life.", effect: { karma:+1, hp:-20 }, flavor: "You offer coin and lie softly; the leader's lip curls, but your throat remains.", next:"final", morality:'neutral' }
+          ]
+        },
+        deep_forest: {
+          title: "Deep Whisperwood — Lost & Wounded",
+          text: "Branches thrum overhead. The wound from the ambush stings with every breath. Night presses in. You can search for shelter or press onward to find help.",
+          choices: [
+            { text: "Look for shelter and tend wounds.", effect: { hp:+5, wisdom:+1 }, flavor: "You fashion a crude bandage and sleep fitfully, dreams full of emberlight.", next:"final", morality:'neutral' },
+            { text: "Push onward, hoping for a healer.", effect: { hp:-15, courage:+1 }, flavor: "Your steps blur; the world narrows to one painful mission: move.", next:"ruins", morality:'neutral' },
+            { text: "Call out for any nearby travelers.", effect: { hp:-10, karma:+1 }, flavor: "A voice answers faintly — sometimes luck follows a brave call.", next:"ruins", morality:'honor' }
+          ]
+        },
+        final: {
+          title: "The Ember's Verdict",
+          text: "The echoes settle. The relic's hum is a faint memory. Your choices — the mercy and bargains, the wounds and the quiet — gather like embers.",
+          choices: [
+            { text: "See your fate.", effect: {}, next:null }
+          ]
+        }
+      };
+
+      // LOOT pools
+      const LOOT_POOLS = {
+        common: [
+          { name: "Tarnished Dagger", type:"weapon", attack:2, desc:"A light blade, quick but fragile." },
+          { name: "Worn Leather", type:"armor", defense:2, desc:"Basic protection against cuts." },
+          { name: "Small Healing Salve", type:"consumable", hp:12, desc:"Apply to heal small wounds." },
+          { name: "Coin Pouch (small)", type:"consumable", coinsMin:1, coinsMax:5, desc:"A small pouch with a little loose change." },
+          { name: "Relic Shard", type:"relic", wisdomBonus:1, healPercent:5, usedHealing:false, isPure:false, isCorrupted:false, desc:"A shard of a larger relic. It hums faintly (+1 Wisdom)." }
+        ],
+        rare: [
+          { name: "Traveler's Sword", type:"weapon", attack:6, desc:"A well-balanced blade." },
+          { name: "Reinforced Hauberk", type:"armor", defense:6, desc:"Good protection for a traveler." },
+          { name: "Relic Shard (rare)", type:"relic", wisdomBonus:1, healPercent:5, usedHealing:false, isPure:false, isCorrupted:false, desc:"A brighter shard. It seems more potent (+1 Wisdom)." },
+          { name: "Ring of Strength", type:"ring", stat:"attack", delta:1, desc:"A ring that lends a steadier hand (+1 Attack)." },
+          { name: "Ring of Wisdom", type:"ring", stat:"wisdom", delta:1, desc:"A ring that sharpens the mind (+1 Wisdom)." },
+          { name: "Medium Coin Satchel", type:"consumable", coinsMin:6, coinsMax:20, desc:"A modest satchel with a decent sum." }
+        ],
+        epic: [
+          { name: "Ember-forged Blade", type:"weapon", attack:12, desc:"A rare blade humming with ember-energy." },
+          { name: "Guardian Plate", type:"armor", defense:12, desc:"Armor fit for a guardian of the seal." },
+          { name: "Pure Relic", type:"relic", wisdomBonus:2, healPercent:10, usedHealing:false, isPure:true, isCorrupted:false, desc:"A warm relic of bright intent. Its presence comforts (+2 Wisdom)." },
+          { name: "Corrupted Relic", type:"relic", wisdomBonus:2, healPercent:10, usedHealing:false, isPure:false, isCorrupted:true, desc:"A dark relic that still sharpens the mind (+2 Wisdom), but it whispers." },
+          { name: "Ring of Shadow", type:"ring", stat:"stealth", delta:2, desc:"A ring that aids slipping between shadows (+2 Stealth)." },
+          { name: "Large Coin Satchel", type:"consumable", coinsMin:15, coinsMax:60, desc:"A satchel with many coins; heavy and satisfying." }
+        ]
+      };
+
+      // --- utils ---
+      function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+      function chance(p){ return Math.random()*100 < p; }
+
+      // --- custom templates persistence (grouped) ---
+      const CUSTOM_KEY = 'eoe_custom_groups_v1';
+      function loadCustomData(){
+        try { const raw = localStorage.getItem(CUSTOM_KEY); if(!raw) { return { active: 'Default', groups: { 'Default': [] } }; } return JSON.parse(raw); } catch(e){ console.error('loadCustomData',e); return { active: 'Default', groups: { 'Default': [] } }; }
+      }
+      function saveCustomData(data){ try { localStorage.setItem(CUSTOM_KEY, JSON.stringify(data)); } catch(e){ console.error('saveCustomData',e); } }
+      function getActiveGroupName(){ const d = loadCustomData(); return d.active || Object.keys(d.groups)[0] || 'Default'; }
+      function ensureGroup(name){ const d = loadCustomData(); d.groups = d.groups || {}; if(!d.groups[name]) d.groups[name]=[]; if(!d.active) d.active = name; saveCustomData(d); }
+      function addCustomTemplateToGroup(groupName, template){ const d = loadCustomData(); d.groups = d.groups || {}; d.groups[groupName] = d.groups[groupName] || []; d.groups[groupName].push(template); saveCustomData(d); }
+      function deleteCustomTemplateByIdFromGroup(groupName, id){ const d = loadCustomData(); if(!d.groups[groupName]) return; d.groups[groupName] = d.groups[groupName].filter(x=>x._id !== id); saveCustomData(d); }
+      function addCustomGroup(name){ const d = loadCustomData(); d.groups = d.groups || {}; if(d.groups[name]) return false; d.groups[name] = []; d.active = name; saveCustomData(d); return true; }
+      function deleteCustomGroup(name){ const d = loadCustomData(); if(!d.groups[name]) return false; delete d.groups[name]; const keys = Object.keys(d.groups); d.active = keys[0] || null; saveCustomData(d); return true; }
+      function setActiveGroup(name){ const d = loadCustomData(); if(!d.groups[name]) return false; d.active = name; saveCustomData(d); return true; }
+      function getTemplatesForActiveGroup(){ const d = loadCustomData(); const g = d.active || Object.keys(d.groups)[0] || 'Default'; return (d.groups && d.groups[g])? d.groups[g] : []; }
+
+      // --- inventory/equipment and core functions ---
+      let nextItemId = 1;
+      function addItem(template){
+        const item = JSON.parse(JSON.stringify(template));
+        item.id = 'i' + (nextItemId++);
+        if(item.type === 'relic'){
+          item.wisdomBonus = item.wisdomBonus || 0;
+          item.healPercent = item.healPercent || 0;
+          item.usedHealing = !!item.usedHealing;
+          item.isPure = !!item.isPure;
+          item.isCorrupted = !!item.isCorrupted;
+        }
+        state.inventory.push(item);
+        appendLog(`Loot: ${item.name}`);
+        if(item.type === 'relic' && item.wisdomBonus){
+          state.wisdom += item.wisdomBonus;
+          appendLog(`${item.name} grants +${item.wisdomBonus} Wisdom while held.`);
+        }
+        if(item.type === 'weapon' && !state.equipped.weaponId) equipItem(item.id);
+        if(item.type === 'armor' && !state.equipped.armorId) equipItem(item.id);
+        if(Array.isArray(item.actions)) runItemActions(item, 'onCreate').catch(e=>console.error('onCreate action failed',e));
+        updateInventoryUI();
+        recalcStatsFromEquipment();
+        updateStatsDisplay();
+        return item;
+      }
+
+      function removeItem(id){
+        const idx = state.inventory.findIndex(i=>i.id===id);
+        if(idx === -1) return;
+        const item = state.inventory[idx];
+        if(item.type === 'relic' && item.wisdomBonus){
+          state.wisdom = Math.max(0, state.wisdom - item.wisdomBonus);
+          appendLog(`${item.name} removed: -${item.wisdomBonus} Wisdom.`);
+        }
+        if(state.equipped.weaponId === id) state.equipped.weaponId = null;
+        if(state.equipped.armorId === id) state.equipped.armorId = null;
+        const rIndex = state.equipped.rings.indexOf(id);
+        if(rIndex !== -1) state.equipped.rings.splice(rIndex,1);
+        state.inventory.splice(idx,1);
+        appendLog('Dropped an item.');
+        recalcStatsFromEquipment();
+        updateInventoryUI();
+        updateStatsDisplay();
+      }
+
+      function equipItem(id){
+        const item = state.inventory.find(i=>i.id===id);
+        if(!item) return;
+        if(item.type === 'weapon'){ state.equipped.weaponId = id; appendLog(`Equipped ${item.name}`); }
+        else if(item.type === 'armor'){ state.equipped.armorId = id; appendLog(`Equipped ${item.name}`); }
+        else if(item.type === 'ring'){
+          const idx = state.equipped.rings.indexOf(id);
+          if(idx !== -1){ state.equipped.rings.splice(idx,1); appendLog(`Unequipped ${item.name}`); }
+          else {
+            if(state.equipped.rings.length < 2){ state.equipped.rings.push(id); appendLog(`Equipped ${item.name}`); }
+            else appendLog('You are already wearing two rings. Unequip one first.');
+          }
+        }
+        recalcStatsFromEquipment();
+        updateInventoryUI();
+        updateStatsDisplay();
+      }
+
+      // Snapshot / Undo system
+      function ensureUndoStack(){
+        if(!Array.isArray(state._undoStack)) state._undoStack = [];
+      }
+
+      function saveSnapshot(label){
+        try {
+          ensureUndoStack();
+          const shallow = Object.assign({}, state);
+          delete shallow._undoStack;
+          const snap = JSON.parse(JSON.stringify(shallow));
+          state._undoStack.push({ ts: Date.now(), label: label || '', snap });
+          if(state._undoStack.length > 120) state._undoStack.shift();
+        } catch(e){
+          console.error('Failed to save snapshot', e);
+        }
+      }
+
+      function undoLast(){
+        ensureUndoStack();
+        if(!state._undoStack || state._undoStack.length === 0){
+          appendLog('Dev: nothing to undo.');
+          return;
+        }
+        const rec = state._undoStack.pop();
+        const newState = rec.snap || {};
+        Object.keys(state).forEach(k => { delete state[k]; });
+        Object.keys(newState).forEach(k => { state[k] = newState[k]; });
+        ensureUndoStack();
+        appendLog(`Dev: undone — ${rec.label || 'previous action'}`);
+        recalcStatsFromEquipment();
+        updateUIAll();
+        try { renderScene(state.current); } catch(e) { console.error('renderScene failed after undo', e); }
+      }
+
+      // useConsumable now saves snapshot before use
+      function useConsumable(id){
+        saveSnapshot('use-item');
+        const idx = state.inventory.findIndex(i=>i.id===id);
+        if(idx === -1) return;
+        const item = state.inventory[idx];
+        if(item.type === 'consumable'){
+          if(item.hp){ state.hp = Math.min(state.maxHp, state.hp + item.hp); appendLog(`Used ${item.name} (+${item.hp} HP)`); }
+          else if(item.coinsMin !== undefined && item.coinsMax !== undefined){
+            const c = randInt(item.coinsMin, item.coinsMax);
+            state.coins += c;
+            appendLog(`Opened ${item.name} and found ${c} coins`);
+            appendNarrative(`<em style="color:var(--muted)">You count the coins inside: ${c}.</em>`);
+          } else if(item.coins){ state.coins += item.coins; appendLog(`Collected ${item.coins} coins`); }
+          state.inventory.splice(idx,1);
+        } else if(item.type === 'relic'){
+          if(item.healPercent && !item.usedHealing){
+            if(state.hp >= state.maxHp){
+              appendNarrative(`<em style="color:var(--muted)">You are already at full health; the relic's healing does nothing now.</em>`);
+              appendLog(`Tried to use ${item.name}, but HP is full.`);
+            } else {
+              const heal = Math.max(1, Math.round(state.hp * item.healPercent / 100));
+              state.hp = Math.min(state.maxHp, state.hp + heal);
+              item.usedHealing = true;
+              appendNarrative(`<em style="color:var(--muted)">${item.name} pulses; you feel ${heal} health return.</em>`);
+              appendLog(`${item.name} used: healed ${heal} HP.`);
+              updateInventoryUI();
+            }
+            updateStatsFromEquipmentAndDisplay();
+          } else {
+            appendNarrative(`<em style="color:var(--muted)">This relic can't be used for healing (either none remaining or no heal property).</em>`);
+            appendLog(`Tried to use ${item.name} but nothing happened.`);
+          }
+        } else {
+          appendLog('Item is not usable.');
+        }
+        if(Array.isArray(item.actions)) runItemActions(item, 'onUse').catch(e=>console.error('onUse action failed',e));
+        updateInventoryUI();
+        updateStatsDisplay();
+      }
+
+      // runItemActions: executes a list of simple declarative actions
+      async function runItemActions(item, trigger){
+        if(!item || !Array.isArray(item.actions)) return;
+        for(const action of item.actions){
+          try{
+            if(action.when && action.when !== trigger) continue;
+            switch(action.kind){
+              case 'applyEffect':
+                if(action.params && typeof action.params === 'object'){
+                  applyEffectDirect(action.params);
+                }
+                break;
+              case 'grantCoins':
+                const amt = Number(action.params) || 0;
+                state.coins += amt;
+                appendLog(`Granted ${amt} coins (action).`);
+                break;
+              case 'goToScene':
+                if(action.params && scenes[action.params]){
+                  state.current = action.params;
+                  renderScene(action.params);
+                }
+                break;
+              case 'appendLog':
+                appendLog(action.params || '');
+                break;
+              case 'equip':
+                if(item.id) equipItem(item.id);
+                break;
+              case 'addToInventory':
+                addItem(Object.assign({}, item, { id: undefined }));
+                break;
+              default:
+                console.warn('Unknown custom action', action);
+            }
+          } catch(e){ console.error('Error running action', action, e); }
+        }
+        updateInventoryUI();
+        updateStatsDisplay();
+      }
+
+      function updateStatsFromEquipmentAndDisplay(){
+        recalcStatsFromEquipment();
+        updateStatsDisplay();
+      }
+
+      function recalcStatsFromEquipment(){
+        const baseAttack = 5;
+        const baseStealth = 3;
+        state.attack = baseAttack;
+        state.stealth = baseStealth;
+        state.defense = 0;
+        if(state.equipped.weaponId){
+          const w = state.inventory.find(i=>i.id === state.equipped.weaponId);
+          if(w && w.attack) state.attack += w.attack;
+        }
+        if(state.equipped.armorId){
+          const a = state.inventory.find(i=>i.id === state.equipped.armorId);
+          if(a && a.defense) state.defense += a.defense;
+        }
+        if(Array.isArray(state.equipped.rings)){
+          state.equipped.rings.forEach(rid=>{
+            const r = state.inventory.find(i=>i.id === rid);
+            if(!r) return;
+            if(r.stat && r.delta){
+              if(r.stat === 'attack') state.attack += r.delta;
+              else if(r.stat === 'stealth') state.stealth += r.delta;
+              else if(r.stat === 'wisdom') state.wisdom += r.delta;
+              else if(r.stat === 'courage') state.courage += r.delta;
+            }
+          });
+        }
+      }
+
+      // damage / loot / encounters (kept)
+      function applyHpChange(amount){
+        if(amount < 0){
+          let dmg = -amount;
+          dmg = Math.max(0, dmg - (state.defense || 0));
+          dmg = Math.round(dmg * (state.dmgMul || 1));
+          state.hp = state.hp - dmg;
+          appendLog(`Took ${dmg} damage.`);
+        } else {
+          state.hp = Math.min(state.maxHp, state.hp + amount);
+          appendLog(`Healed ${amount} HP.`);
+        }
+        if(state.hp <= 0) state.hp = 0;
+        updateStatsDisplay();
+      }
+
+      function generateLoot(){
+        const results = [];
+        if(chance(70 * state.lootBias)) {
+          const coins = randInt(5, 25) * (settings.difficulty === 'easy' ? 2 : 1);
+          results.push({ type:'coins', coins });
+        }
+        const roll = Math.random();
+        if(roll < 0.55 * state.lootBias){
+          const item = LOOT_POOLS.common[randInt(0, LOOT_POOLS.common.length-1)];
+          results.push(item);
+        } else if(roll < 0.85 * state.lootBias){
+          const item = LOOT_POOLS.rare[randInt(0, LOOT_POOLS.rare.length-1)];
+          results.push(item);
+        } else {
+          const item = LOOT_POOLS.epic[randInt(0, LOOT_POOLS.epic.length-1)];
+          results.push(item);
+        }
+        return results;
+      }
+
+      const ENCOUNTER_TYPES = ['chest','bandits','wolf','merchant'];
+
+      function maybeTriggerEncounter(nextSceneKey){
+        if(!settings.encountersEnabled){ renderScene(nextSceneKey); return; }
+        const freq = parseInt(settings.encounterFreq || 20,10);
+        if(!chance(freq)){ renderScene(nextSceneKey); return; }
+        const pick = ENCOUNTER_TYPES[randInt(0, ENCOUNTER_TYPES.length-1)];
+        startEncounter(pick, nextSceneKey);
+      }
+
+      function startEncounter(type, continueTo){
+        state._inEncounter = true;
+        state._resumeTo = continueTo || null;
+        if(type === 'chest'){
+          renderEncounter({
+            title: "A Half-Buried Chest",
+            text: "A moss-covered chest sits in a sheltered hollow. It might contain treasure — or a trap.",
+            choices: [
+              { text: "Open the chest carefully (stealth check).", action: ()=> {
+                  const stealthSuccess = chance(40 + state.stealth*10);
+                  if(stealthSuccess){
+                    appendNarrative(`<em style="color:var(--muted)">You disarm a simple latch and slide the lid away with care.</em>`);
+                    const loot = generateLoot();
+                    processLoot(loot);
+                  } else {
+                    const trapDmg = Math.round((randInt(8,18)) * state.dmgMul);
+                    appendNarrative(`<em style="color:var(--muted)">A hidden spring snaps — poison darts bite your arm.</em>`);
+                    applyHpChange(-trapDmg);
+                  }
+                  endEncounter();
+                } },
+              { text: "Smash it open (quick).", action: ()=> {
+                  if(chance(50 + (state.attack*5))){
+                    appendNarrative(`<em style="color:var(--muted)">The chest splits and reveals treasure!</em>`);
+                    const loot = generateLoot();
+                    if(chance(25)) loot.push(LOOT_POOLS.common[randInt(0, LOOT_POOLS.common.length-1)]);
+                    processLoot(loot);
+                  } else {
+                    const dmg = Math.round(randInt(12,28) * state.dmgMul);
+                    appendNarrative(`<em style="color:var(--muted)">A foul powder explodes; you stagger back, coughing.</em>`);
+                    applyHpChange(-dmg);
+                  }
+                  endEncounter();
+                } },
+              { text: "Leave it alone.", action: ()=> {
+                  appendNarrative(`<em style="color:var(--muted)">You step away. Some treasures remain for others.</em>`);
+                  endEncounter();
+                } }
+            ]
+          });
+        } else if(type === 'bandits'){
+          renderEncounter({
+            title: "Roaming Bandits",
+            text: "A pair of bandits step from behind a boulder. They look hungry — and honest about wanting your coin.",
+            choices: [
+              { text: "Fight them.", action: ()=> {
+                  const win = (state.attack + randInt(0,6)) >= 10;
+                  if(win){
+                    appendNarrative(`<em style="color:var(--muted)">You best them after a violent scuffle.</em>`);
+                    const loot = generateLoot();
+                    processLoot(loot);
+                    applyHpChange(-Math.round(randInt(6,18)*state.dmgMul));
+                  } else {
+                    appendNarrative(`<em style="color:var(--muted)">They land a heavy blow as you try to parry.</em>`);
+                    applyHpChange(-Math.round(randInt(18,40)*state.dmgMul));
+                  }
+                  endEncounter();
+                } },
+              { text: "Try to sneak past.", action: ()=> {
+                  const sneak = chance(25 + state.stealth*12);
+                  if(sneak) appendNarrative(`<em style="color:var(--muted)">You slip by unnoticed.</em>`);
+                  else { appendNarrative(`<em style="color:var(--muted)">One of them spots you and slices at your side.</em>`); applyHpChange(-Math.round(randInt(8,22)*state.dmgMul)); }
+                  endEncounter();
+                } },
+              { text: "Pay them off with coins.", action: ()=> {
+                  if(state.coins >= 20){ state.coins -= 20; appendNarrative(`<em style="color:var(--muted)">They take the coin and leave with a curse.</em>`); appendLog('Paid bandits 20 coins.'); }
+                  else { appendNarrative(`<em style="color:var(--muted)">You don't have enough — they take a swipe at your arm.</em>`); applyHpChange(-Math.round(randInt(8,20)*state.dmgMul)); }
+                  updateStatsDisplay(); endEncounter();
+                } }
+            ]
+          });
+        } else if(type === 'wolf'){
+          renderEncounter({
+            title: "A Lone Howl",
+            text: "A torn ribbon indicates a recent struggle. A lone wolf circles, wary and hungry.",
+            choices: [
+              { text: "Throw it some food (if you have consumable).", action: ()=> {
+                  const hasFood = state.inventory.some(i=>i.type==='consumable' && i.hp && i.hp>=10);
+                  if(hasFood){
+                    const idx = state.inventory.findIndex(i=>i.type==='consumable' && i.hp);
+                    if(idx !== -1){ const it = state.inventory.splice(idx,1)[0]; appendNarrative(`<em style="color:var(--muted)">You toss ${it.name}. The wolf sniffs and wanders away.</em>`); }
+                    else appendNarrative(`<em style="color:var(--muted)">You have nothing suitable; the wolf growls.</em>`);
+                  } else { appendNarrative(`<em style="color:var(--muted)">You have nothing to offer; the wolf lunges.</em>`); applyHpChange(-Math.round(randInt(7,18)*state.dmgMul)); }
+                  endEncounter();
+                } },
+              { text: "Calmly back away.", action: ()=> {
+                  if(chance(30 + state.stealth*10)) appendNarrative(`<em style="color:var(--muted)">You retreat slowly; the wolf loses interest.</em>`);
+                  else { appendNarrative(`<em style="color:var(--muted)">The wolf snaps as you move — a shallow cut opens.</em>`); applyHpChange(-Math.round(randInt(5,14)*state.dmgMul)); }
+                  endEncounter();
+                } },
+              { text: "Attack the wolf.", action: ()=> {
+                  if(state.attack >= 8 || chance(state.attack*5)){ appendNarrative(`<em style="color:var(--muted)">Your strike is true; the wolf flees wounded.</em>`); processLoot(generateLoot()); applyHpChange(-Math.round(randInt(4,10)*state.dmgMul)); }
+                  else { appendNarrative(`<em style="color:var(--muted)">The wolf is quicker; you stumble and bleed.</em>`); applyHpChange(-Math.round(randInt(15,30)*state.dmgMul)); }
+                  endEncounter();
+                } }
+            ]
+          });
+        } else {
+          renderEncounter({
+            title: "A Traveling Merchant",
+            text: "A cart rattles by. The merchant offers wares — sometimes useful, sometimes cursed.",
+            choices: [
+              { text: "Trade coins for a random item.", action: ()=> {
+                  if(state.coins >= 25){ state.coins -= 25; const pool = Math.random() < 0.7 ? LOOT_POOLS.common : LOOT_POOLS.rare; const item = pool[randInt(0,pool.length-1)]; addItem(item); appendNarrative(`<em style="color:var(--muted)">You pay the merchant and receive ${item.name}.</em>`); }
+                  else appendNarrative(`<em style="color:var(--muted)">You don't have enough. The merchant laughs and moves on.</em>`);
+                  endEncounter();
+                } },
+              { text: "Ask for information (pay or charm).", action: ()=> {
+                  if(chance(30 + state.wisdom*10)){ appendNarrative(`<em style="color:var(--muted)">He offers a useful rumor about the ruins.</em>`); state.wisdom += 1; }
+                  else appendNarrative(`<em style="color:var(--muted)">He keeps his secrets close; you walk away empty-handed.</em>`);
+                  endEncounter();
+                } },
+              { text: "Leave politely.", action: ()=> {
+                  appendNarrative(`<em style="color:var(--muted)">You decline the wares and continue on your path.</em>`); endEncounter();
+                } }
+            ]
+          });
+        }
+      }
+
+      // render & process encounters
+      function renderEncounter(enc){
+        narrativeEl.innerHTML = `<strong style="display:block;margin-bottom:6px">${enc.title}</strong><div>${enc.text}</div>`;
+        choicesEl.innerHTML = '';
+        enc.choices.forEach(c=>{
+          const btn = document.createElement('button');
+          btn.className = 'choice';
+          btn.innerHTML = `<strong style="display:block">${c.text}</strong>`;
+          btn.onclick = ()=> { try { saveSnapshot('encounter'); c.action(); } catch(e){ console.error(e); } };
+          choicesEl.appendChild(btn);
+        });
+      }
+
+      function endEncounter(){
+        updateUIAll();
+        const resume = state._resumeTo || null;
+        state._resumeTo = null;
+        showNextButton(()=> { setTimeout(()=> { if(resume) renderScene(resume); updateUIAll(); }, 10); });
+      }
+
+      function processLoot(loot){
+        if(!loot || loot.length===0) return;
+        loot.forEach(l=>{
+          if(l.type === 'coins'){ const c = l.coins || 0; state.coins += c; appendLog(`Found ${c} coins`); }
+          else addItem(l);
+        });
+        updateStatsDisplay();
+      }
+
+      // UI helpers
+      function renderScene(sceneKey){
+        state.current = sceneKey;
+        const scene = scenes[sceneKey];
+        if(!scene) return;
+        narrativeEl.innerHTML = `<strong style="display:block;margin-bottom:6px">${scene.title}</strong><div>${scene.text}</div>`;
+        choicesEl.innerHTML = '';
+        scene.choices.forEach((choice, idx) => {
+          const btn = document.createElement('button');
+          btn.className = 'choice';
+          btn.innerHTML = `<strong style="display:block">${choice.text}</strong><div style="color:var(--muted);font-size:12px;margin-top:6px">${choice.flavor || ''}</div>`;
+          btn.onclick = ()=> choose(sceneKey, idx);
+          choicesEl.appendChild(btn);
+        });
+        showRandomTip();
+      }
+
+      function appendNarrative(html){
+        const p = document.createElement('div');
+        p.innerHTML = html;
+        narrativeEl.appendChild(p);
+        narrativeEl.scrollTop = narrativeEl.scrollHeight;
+      }
+
+      function appendLog(text){
+        const item = document.createElement('div');
+        item.textContent = text;
+        logEl.appendChild(item);
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      function updateStatsDisplay(){
+        hpText.textContent = Math.max(0, Math.round(state.hp));
+        hpMeter.style.width = Math.max(0, Math.min(100, (state.hp/state.maxHp)*100)) + '%';
+        attackText.textContent = state.attack;
+        attackMeter.style.width = Math.min(100, 10 + state.attack*7)+'%';
+        stealthText.textContent = state.stealth;
+        stealthMeter.style.width = Math.min(100, 10 + state.stealth*7)+'%';
+        courageText.textContent = state.courage;
+        courageMeter.style.width = Math.min(100, 20 + state.courage*12)+'%';
+        wisdomText.textContent = state.wisdom;
+        wisdomMeter.style.width = Math.min(100, 20 + state.wisdom*12)+'%';
+        karmaText.textContent = state.karma;
+        const k = 50 + Math.max(-5, Math.min(5, state.karma)) * 6;
+        karmaMeter.style.width = Math.max(0, Math.min(100,k)) + '%';
+        coinsText.textContent = state.coins;
+        playerNameEl.textContent = settings.playerName || defaultSettings.playerName;
+
+        if(settings.showMorality){
+          moralityCountersEl.style.display = 'block';
+          honorCountEl.textContent = state.honorCount || 0;
+          dishonorCountEl.textContent = state.dishonorCount || 0;
+        } else {
+          moralityCountersEl.style.display = 'none';
+        }
+      }
+
+      function updateInventoryUI(){
+        inventoryList.innerHTML = '';
+        if(state.inventory.length === 0){
+          inventoryList.innerHTML = `<div class="small" style="color:var(--muted)">Empty</div>`;
+          return;
+        }
+        state.inventory.forEach(item=>{
+          const div = document.createElement('div');
+          div.className = 'item';
+          const left = document.createElement('div');
+          left.innerHTML = `<div style="font-weight:700">${item.name}</div><div class="meta">${item.desc || ''}</div>`;
+          const right = document.createElement('div');
+          right.style.display = 'flex';
+          right.style.flexDirection = 'column';
+          right.style.alignItems = 'flex-end';
+          const tag = document.createElement('div');
+          tag.className = 'tag';
+          if(item.type === 'relic'){
+            let t = 'RELIC';
+            if(item.isPure) t += ' · PURE';
+            if(item.isCorrupted) t += ' · CORRUPTED';
+            tag.textContent = t;
+          } else tag.textContent = item.type.toUpperCase();
+          const btnWrap = document.createElement('div');
+          btnWrap.style.marginTop = '6px';
+
+          if(item.type === 'weapon' || item.type === 'armor'){
+            const isEquipped = (item.id === state.equipped.weaponId) || (item.id === state.equipped.armorId);
+            const btn = document.createElement('button');
+            btn.className = 'btn';
+            btn.style.padding = '6px 8px';
+            btn.textContent = isEquipped ? 'Unequip' : 'Equip';
+            btn.onclick = ()=> { if(isEquipped) unequipItem(item.id); else equipItem(item.id); };
+            btnWrap.appendChild(btn);
+          } else if(item.type === 'ring'){
+            const isEquipped = state.equipped.rings.includes(item.id);
+            const btn = document.createElement('button');
+            btn.className = 'btn';
+            btn.style.padding = '6px 8px';
+            btn.textContent = isEquipped ? 'Unequip' : 'Equip';
+            btn.onclick = ()=> { equipItem(item.id); };
+            btnWrap.appendChild(btn);
+          } else if(item.type === 'consumable'){
+            const btn = document.createElement('button');
+            btn.className = 'btn';
+            btn.style.padding = '6px 8px';
+            btn.textContent = 'Use';
+            btn.onclick = ()=> { useConsumable(item.id); updateInventoryUI(); };
+            btnWrap.appendChild(btn);
+          } else if(item.type === 'relic'){
+            const useBtn = document.createElement('button');
+            useBtn.className = 'btn';
+            useBtn.style.padding = '6px 8px';
+            useBtn.textContent = (item.healPercent && !item.usedHealing) ? `Use (${item.healPercent}% heal)` : 'Details';
+            useBtn.onclick = ()=> { useConsumable(item.id); updateInventoryUI(); };
+            btnWrap.appendChild(useBtn);
+            if(item.isPure || item.isCorrupted) {
+              const info = document.createElement('div');
+              info.className = 'small';
+              info.style.color = 'var(--muted)';
+              info.style.marginTop = '6px';
+              if(item.isPure) info.textContent = 'Unlocks: Ember Heart (if honor-only)';
+              if(item.isCorrupted) info.textContent = 'Unlocks: Destroyer (if dishonor-only)';
+              right.appendChild(info);
+            }
+          } else {
+            const btn = document.createElement('button');
+            btn.className = 'btn';
+            btn.style.padding = '6px 8px';
+            btn.textContent = 'Drop';
+            btn.onclick = ()=> { removeItem(item.id); };
+            btnWrap.appendChild(btn);
+          }
+
+          const dropBtn = document.createElement('button');
+          dropBtn.className = 'btn';
+          dropBtn.style.marginLeft='6px';
+          dropBtn.style.padding='6px 8px';
+          dropBtn.textContent = 'Drop';
+          dropBtn.onclick = ()=> { removeItem(item.id); };
+
+          if(!(state.equipped.weaponId === item.id || state.equipped.armorId === item.id || state.equipped.rings.includes(item.id))){
+            btnWrap.appendChild(dropBtn);
+          }
+
+          right.appendChild(tag);
+          right.appendChild(btnWrap);
+          div.appendChild(left);
+          div.appendChild(right);
+          inventoryList.appendChild(div);
+        });
+      }
+
+      function applyEffectDirect(effect){
+        if(!effect) return;
+        if(effect.hp) applyHpChange(effect.hp);
+        if(effect.attack) state.attack += effect.attack;
+        if(effect.stealth) state.stealth += effect.stealth;
+        if(effect.courage) state.courage += effect.courage;
+        if(effect.wisdom) state.wisdom += effect.wisdom;
+        if(effect.karma) state.karma += effect.karma;
+        updateStatsDisplay();
+      }
+
+      function mergeEffects(a,b){ const res = Object.assign({}, a || {}); if(!b) return res; Object.keys(b).forEach(k=>{ if(typeof b[k] === 'number') res[k] = (res[k] || 0) + b[k]; else res[k] = b[k]; }); return res; }
+
+      // next button
+      function showNextButton(callback){
+        clearAutoNext();
+        choicesEl.innerHTML = '';
+        const btn = document.createElement('button');
+        btn.className = 'choice';
+        btn.id = 'nextBtn';
+        btn.innerHTML = `<strong style="display:block">Next →</strong><div style="color:var(--muted);font-size:12px;margin-top:6px">Click to continue</div>`;
+        btn.onclick = ()=> { clearAutoNext(); choicesEl.innerHTML = ''; setTimeout(()=> { try { callback(); } catch(e){ console.error(e); } }, 12); };
+        choicesEl.appendChild(btn);
+        if(autoplayTimer) autoNextTimeout = setTimeout(()=> { const nb = document.getElementById('nextBtn'); if(nb) nb.click(); }, 700);
+      }
+      function clearAutoNext(){ if(autoNextTimeout){ clearTimeout(autoNextTimeout); autoNextTimeout = null; } }
+
+      // choose handler
+      function choose(sceneKey, choiceIndex){
+        saveSnapshot('choice');
+        const scene = scenes[sceneKey];
+        const choice = scene.choices[choiceIndex];
+        let effect = Object.assign({}, choice.effect || {});
+        let flavor = choice.flavor || '';
+
+        if(typeof choice.onChoose === 'function'){
+          const result = choice.onChoose(state) || {};
+          if(result.extraEffect) effect = mergeEffects(effect, result.extraEffect);
+          if(result.flavor) flavor += ' ' + result.flavor;
+        }
+
+        applyEffectDirect(effect);
+        appendLog(`${scene.title} → ${choice.text}`);
+        if(flavor) appendNarrative(`<em style="color:var(--muted)">${flavor}</em>`);
+
+        if(choice.morality === 'honor') state.honorCount++;
+        if(choice.morality === 'dishonor') state.dishonorCount++;
+
+        if(sceneKey === 'chapel' && choice.specialRelicPick){
+          if(choice.specialRelicPick === 'keep'){
+            addItem({ name: "Pure Relic (Recovered)", type:"relic", wisdomBonus:2, healPercent:10, usedHealing:false, isPure:true, isCorrupted:false, desc:"Recovered from the chapel. A warm relic of intent (+2 Wisdom)." });
+            appendNarrative(`<em style="color:var(--muted)">You lift and stow the relic carefully.</em>`);
+          } else if(choice.specialRelicPick === 'destroy'){
+            appendNarrative(`<em style="color:var(--muted)">Fragments scatter; you leave nothing to carry.</em>`);
+          } else if(choice.specialRelicPick === 'sell'){
+            addItem({ name: "Corrupted Relic (Acquired)", type:"relic", wisdomBonus:2, healPercent:10, usedHealing:false, isPure:false, isCorrupted:true, desc:"A corrupted relic purchased on the black market (+2 Wisdom)." });
+            appendNarrative(`<em style="color:var(--muted)">You slip the relic into a satchel. Someone watched you take it.</em>`);
+          }
+        }
+
+        state.history.push({ scene: sceneKey, choiceIndex, snapshot: {...state} });
+
+        if(state.hp <= 0){ showEnding('death'); return; }
+
+        if(choice.next){
+          const nextKey = choice.next;
+          showNextButton(()=> { setTimeout(()=> maybeTriggerEncounter(nextKey), 8); });
+        } else {
+          showNextButton(()=> evaluateEnding());
+        }
+
+        updateStatsDisplay();
+      }
+
+      function hasPureRelic(){ return state.inventory.some(i=>i.type==='relic' && i.isPure); }
+      function hasCorruptedRelic(){ return state.inventory.some(i=>i.type==='relic' && i.isCorrupted); }
+      function onlyHonorable(){ return state.dishonorCount === 0 && state.honorCount > 0; }
+      function onlyDishonorable(){ return state.honorCount === 0 && state.dishonorCount > 0; }
+
+      function evaluateEnding(){
+        if(state.hp <= 0){ showEnding('death'); return; }
+        if(hasPureRelic() && onlyHonorable()){
+          showEnding('emberHeart'); return;
+        }
+        if(hasCorruptedRelic() && onlyDishonorable()){
+          showEnding('destroyer'); return;
+        }
+        if(state.karma >= 3 && (state.wisdom >=2 || state.hp > 60)){ showEnding('good'); return; }
+        if(state.karma <= -3){ showEnding('bad'); return; }
+        if(state.wisdom >= 4 && state.hp > 30){ showEnding('clever'); return; }
+        if(state.hp > 25){ showEnding('survivor'); return; }
+        showEnding('death');
+      }
+
+      function showEnding(kind){
+        let title='', body='', cls='';
+        if(kind === 'death'){ title='Embers Drowned — Death'; body="Your wounds are too deep. The ember's light fades."; cls='death'; appendLog('Ending: Death'); }
+        else if(kind === 'emberHeart'){ title='Ember Heart — True Ending'; body="You are chosen by the Ember Heart. Your mercy and wisdom kindle hope across the land. The pure relic resonates and the ember within becomes a guiding blaze.", cls='ember special'; appendLog('Ending: Ember Heart (True)'); }
+        else if(kind === 'destroyer'){ title='The Destroyer — True Ending'; body="You embraced power and darkness. The corrupted relic amplifies your will; the ember burns everything in your wake.", cls='destroyer special'; appendLog('Ending: Destroyer (True)'); }
+        else if(kind === 'good'){ title='Ember of Hope — Heroic Ending'; body='Communities gather to praise your mercy; the relic mends more than stone.'; cls='good'; appendLog('Ending: Good'); }
+        else if(kind === 'bad'){ title='Ashen Crown — Corrupt Ending'; body='Power hardened you. Warmth is bought; nights are lonely.'; cls='bad'; appendLog('Ending: Bad'); }
+        else if(kind === 'clever'){ title='Quiet Light — Clever Ending'; body='You scatter power where it helps most; your name is a quiet comfort.'; cls='good'; appendLog('Ending: Clever'); }
+        else { title='A Faint Ember — Survivor'; body='Scarred and weary, you keep walking. The ember in your chest flickers but does not die.'; cls='bad'; appendLog('Ending: Survivor'); }
+
+        narrativeEl.innerHTML = `<div class="ending ${cls}"><strong style="display:block;font-size:18px;margin-bottom:8px">${title}</strong><div style="margin-bottom:12px">${body}</div><div style="color:var(--muted);font-size:13px">Stats: HP ${Math.max(0,Math.round(state.hp))}, Attack ${state.attack}, Stealth ${state.stealth}, Courage ${state.courage}, Wisdom ${state.wisdom}, Karma ${state.karma}</div></div>`;
+        choicesEl.innerHTML = `<button class="choice" id="endRestart">Play Again</button>`;
+        document.getElementById('endRestart').onclick = ()=> { resetState(); };
+      }
+
+      // next button & autoplay handling
+      function showNextButton(callback){
+        clearAutoNext();
+        choicesEl.innerHTML = '';
+        const btn = document.createElement('button');
+        btn.className = 'choice';
+        btn.id = 'nextBtn';
+        btn.innerHTML = `<strong style="display:block">Next →</strong><div style="color:var(--muted);font-size:12px;margin-top:6px">Click to continue</div>`;
+        btn.onclick = ()=> { clearAutoNext(); choicesEl.innerHTML = ''; setTimeout(()=> { try { callback(); } catch(e){ console.error(e); } }, 12); };
+        choicesEl.appendChild(btn);
+        if(autoplayTimer) autoNextTimeout = setTimeout(()=> { const nb = document.getElementById('nextBtn'); if(nb) nb.click(); }, 700);
+      }
+      function clearAutoNext(){ if(autoNextTimeout){ clearTimeout(autoNextTimeout); autoNextTimeout = null; } }
+
+      // settings modal behavior
+      settingsBtn.onclick = ()=> {
+        setName.value = settings.playerName;
+        setDifficulty.value = settings.difficulty;
+        setEncounters.checked = settings.encountersEnabled;
+        setEncounterFreq.value = settings.encounterFreq;
+        setShowMorality.checked = !!settings.showMorality;
+        modalBackdrop.style.display = 'flex';
+      };
+      cancelSettings.onclick = ()=> { modalBackdrop.style.display = 'none'; };
+      saveSettings.onclick = ()=> {
+        settings.playerName = setName.value.trim() || defaultSettings.playerName;
+        settings.difficulty = setDifficulty.value;
+        settings.encountersEnabled = !!setEncounters.checked;
+        settings.encounterFreq = parseInt(setEncounterFreq.value,10) || defaultSettings.encounterFreq;
+        settings.showMorality = !!setShowMorality.checked;
+        modalBackdrop.style.display = 'none';
+        applyDifficultyModifiers();
+        updateStatsDisplay();
+        playerNameEl.textContent = settings.playerName;
+      };
+
+      // --- Developer panel functions ---
+      function openDevPanel(){
+        populateDevPanel();
+        devModalBackdrop.style.display = 'flex';
+      }
+      function closeDevPanel(){
+        devModalBackdrop.style.display = 'none';
+      }
+
+      function populateDevPanel(){
+        devCoins.value = state.coins || 0;
+        devHP.value = state.hp || 0;
+        devKarma.value = state.karma || 0;
+        devHonor.value = state.honorCount || 0;
+        devDishonor.value = state.dishonorCount || 0;
+        devAttack.value = state.attack || 0;
+        devStealth.value = state.stealth || 0;
+        devCourage.value = state.courage || 0;
+        devWisdom.value = state.wisdom || 0;
+        devDefense.value = state.defense || 0;
+
+        // populate item select with LOOT_POOLS and custom templates
+        devItemSelect.innerHTML = '';
+        const addOpt = (it, poolName) => {
+          const opt = document.createElement('option');
+          opt.value = `${poolName}::${it.name}`;
+          opt.textContent = `${it.name} — ${it.type} (${poolName})`;
+          devItemSelect.appendChild(opt);
+        };
+        ['common','rare','epic'].forEach(poolName=>{
+          LOOT_POOLS[poolName].forEach(it=> addOpt(it,poolName));
+        });
+        // custom templates for all groups combined
+        const data = loadCustomData();
+        Object.keys(data.groups || {}).forEach(g=>{
+          (data.groups[g] || []).forEach(t=>{
+            const opt = document.createElement('option');
+            opt.value = `custom::${t._id}`;
+            opt.textContent = `${t.name} — ${t.type} (custom: ${g})`;
+            devItemSelect.appendChild(opt);
+          });
+        });
+
+        // populate scene select
+        devSceneSelect.innerHTML = '';
+        Object.keys(scenes).forEach(k=>{
+          const opt = document.createElement('option');
+          opt.value = k;
+          opt.textContent = `${k} — ${scenes[k].title || ''}`;
+          if(k === state.current) opt.selected = true;
+          devSceneSelect.appendChild(opt);
+        });
+      }
+
+      // add item from dev panel
+      devAddItemBtn.onclick = ()=>{
+        const val = devItemSelect.value;
+        if(!val) return;
+        const parts = val.split('::');
+        const pool = parts[0];
+        const nameOrId = parts.slice(1).join('::');
+        if(pool === 'custom'){
+          const data = loadCustomData();
+          let tmpl = null;
+          Object.keys(data.groups || {}).forEach(g=>{
+            (data.groups[g]||[]).forEach(t=>{ if(t._id === nameOrId) tmpl = t; });
+          });
+          if(tmpl) addItem(tmpl);
+        } else {
+          const template = LOOT_POOLS[pool].find(i=>i.name === nameOrId);
+          if(template) addItem(template);
+        }
+      };
+
+      devAddRandomBtn.onclick = ()=>{
+        const customs = loadCustomData();
+        const allCustom = [];
+        Object.keys(customs.groups || {}).forEach(g=> (customs.groups[g]||[]).forEach(t=> allCustom.push(t)));
+        const all = [].concat(LOOT_POOLS.common, LOOT_POOLS.rare, LOOT_POOLS.epic, allCustom);
+        const picked = all[randInt(0, all.length-1)];
+        addItem(picked);
+      };
+
+      devSetSceneBtn.onclick = ()=>{
+        const s = devSceneSelect.value;
+        if(!s || !scenes[s]) return;
+        state.current = s;
+        renderScene(s);
+        updateStatsDisplay();
+        appendLog(`Dev: scene set to ${s}`);
+      };
+      devRenderSceneBtn.onclick = ()=>{
+        const s = devSceneSelect.value;
+        if(!s || !scenes[s]) return;
+        renderScene(s);
+        appendLog(`Dev: scene rendered ${s}`);
+      };
+
+      devSaveBtn.onclick = ()=>{
+        state.coins = Math.max(0, parseInt(devCoins.value,10) || 0);
+        state.hp = Math.max(0, Math.min(state.maxHp || 100, parseInt(devHP.value,10) || 0));
+        state.karma = parseInt(devKarma.value,10) || 0;
+        state.honorCount = Math.max(0, parseInt(devHonor.value,10) || 0);
+        state.dishonorCount = Math.max(0, parseInt(devDishonor.value,10) || 0);
+        state.attack = parseInt(devAttack.value,10) || state.attack;
+        state.stealth = parseInt(devStealth.value,10) || state.stealth;
+        state.courage = parseInt(devCourage.value,10) || state.courage;
+        state.wisdom = parseInt(devWisdom.value,10) || state.wisdom;
+        state.defense = parseInt(devDefense.value,10) || state.defense;
+        recalcStatsFromEquipment();
+        updateUIAll();
+        appendLog('Dev: values saved to state.');
+      };
+
+      devCloseBtn.onclick = ()=> { closeDevPanel(); };
+
+      devHealFullBtn.onclick = ()=>{
+        state.hp = state.maxHp;
+        updateStatsDisplay();
+        appendLog('Dev: healed to max.');
+      };
+      devGiveCoinsMaxBtn.onclick = ()=>{
+        state.coins += 1000;
+        updateStatsDisplay();
+        appendLog('Dev: +1000 coins.');
+      };
+      devClearInvBtn.onclick = ()=>{
+        state.inventory = [];
+        state.equipped = { weaponId:null, armorId:null, rings:[] };
+        recalcStatsFromEquipment();
+        updateInventoryUI();
+        updateStatsDisplay();
+        appendLog('Dev: inventory cleared.');
+      };
+
+      devUndoBtn.onclick = ()=> { undoLast(); };
+
+      // open dev panel with Ctrl+Shift+D
+      document.addEventListener('keydown', (ev)=>{
+        if(ev.ctrlKey && ev.shiftKey && (ev.key === 'D' || ev.key === 'd')){
+          ev.preventDefault();
+          openDevPanel();
+        }
+      });
+
+      // --- Drawer behavior & custom item editor logic ---
+      function openDrawer(){ drawer.classList.add('open'); drawer.setAttribute('aria-hidden','false'); populateCustomTemplatesList(); renderGroupTabs(); }
+      function closeDrawer(){ drawer.classList.remove('open'); drawer.setAttribute('aria-hidden','true'); }
+      openCustomEditorBtn.addEventListener('click', openDrawer);
+      ci_closeBtn.addEventListener('click', closeDrawer);
+
+      // show/hide type specific fields
+      function updateTypeFields(){
+        const type = ci_type.value;
+        document.getElementById('ci_weaponFields').style.display = (type==='weapon')? 'block' : 'none';
+        document.getElementById('ci_armorFields').style.display = (type==='armor')? 'block' : 'none';
+        document.getElementById('ci_ringFields').style.display = (type==='ring')? 'block' : 'none';
+        document.getElementById('ci_consumableFields').style.display = (type==='consumable')? 'block' : 'none';
+        document.getElementById('ci_relicFields').style.display = (type==='relic')? 'block' : 'none';
+      }
+      ci_type.addEventListener('change', updateTypeFields);
+      updateTypeFields();
+
+      // actions array builder
+      let ci_actions = [];
+      function renderActionsList(){
+        ci_actionsList.innerHTML = '';
+        if(ci_actions.length === 0){ ci_actionsList.innerHTML = '<div class="small" style="color:var(--muted)">No actions added.</div>'; return; }
+        ci_actions.forEach((a,idx)=>{
+          const row = document.createElement('div');
+          row.style.display='flex'; row.style.justifyContent='space-between'; row.style.alignItems='center'; row.style.gap='8px'; row.style.marginBottom='6px';
+          row.innerHTML = `<div style="font-size:13px"><strong>${a.kind}</strong> ${a.params!==undefined?JSON.stringify(a.params):''}</div>`;
+          const right = document.createElement('div');
+          right.style.display='flex'; right.style.gap='6px';
+          const up = document.createElement('button'); up.className='btn'; up.textContent='↑'; up.onclick=()=>{ if(idx>0){ const t=ci_actions[idx-1]; ci_actions[idx-1]=ci_actions[idx]; ci_actions[idx]=t; renderActionsList(); } };
+          const down = document.createElement('button'); down.className='btn'; down.textContent='↓'; down.onclick=()=>{ if(idx<ci_actions.length-1){ const t=ci_actions[idx+1]; ci_actions[idx+1]=ci_actions[idx]; ci_actions[idx]=t; renderActionsList(); } };
+          const del = document.createElement('button'); del.className='btn'; del.textContent='Delete'; del.onclick=()=>{ ci_actions.splice(idx,1); renderActionsList(); };
+          right.appendChild(up); right.appendChild(down); right.appendChild(del);
+          row.appendChild(right);
+          ci_actionsList.appendChild(row);
+        });
+      }
+
+      ci_addActionBtn.onclick = ()=>{
+        const kind = ci_actionKind.value;
+        const raw = ci_actionParam.value.trim();
+        let params = raw;
+        try{ if(raw.startsWith('{')||raw.startsWith('[')) params = JSON.parse(raw); else if(!isNaN(Number(raw)) && raw !== '') params = Number(raw); } catch(e){ params = raw; }
+        ci_actions.push({ kind, params });
+        ci_actionParam.value = '';
+        renderActionsList();
+      };
+
+      // build item template from form
+      function buildItemTemplate(){
+        const t = { name: ci_name.value.trim() || 'Custom Item', type: ci_type.value, desc: ci_desc.value.trim() || '', actions: JSON.parse(JSON.stringify(ci_actions)) };
+        if(t.type === 'weapon'){ t.attack = Number(ci_attack.value) || 0; }
+        if(t.type === 'armor'){ t.defense = Number(ci_defense.value) || 0; }
+        if(t.type === 'ring'){ t.stat = ci_ringStat.value; t.delta = Number(ci_ringDelta.value) || 0; }
+        if(t.type === 'consumable'){
+          const hp = Number(ci_consumeHp.value) || 0;
+          const min = Number(ci_coinsMin.value) || 0;
+          const max = Number(ci_coinsMax.value) || 0;
+          if(hp>0) t.hp = hp;
+          else if(min>0 || max>0) { t.coinsMin = min || 0; t.coinsMax = max || 0; }
+        }
+        if(t.type === 'relic'){
+          t.wisdomBonus = Number(ci_relicWis.value) || 0;
+          t.healPercent = Number(ci_relicHeal.value) || 0;
+          t.usedHealing = false;
+          t.isPure = !!ci_relicPure.checked;
+          t.isCorrupted = !!ci_relicCorrupt.checked;
+        }
+        t._id = 'c_' + Date.now() + '_' + Math.floor(Math.random()*9999);
+        t.rarity = ci_rarity.value || 'rare';
+        return t;
+      }
+
+      // preview
+      ci_previewBtn.onclick = ()=>{
+        const tmpl = buildItemTemplate();
+        const previewHtml = `<div style="font-weight:700;margin-bottom:6px">${tmpl.name}</div><div style="color:var(--muted)">${tmpl.desc}</div><div style="color:var(--muted);margin-top:8px">Type: ${tmpl.type} • Rarity: ${tmpl.rarity}</div>`;
+        appendNarrative(previewHtml);
+      };
+
+      // create item: instantiate/save/add to pool
+      ci_createBtn.onclick = ()=>{
+        const tmpl = buildItemTemplate();
+        saveSnapshot('create-item');
+        const active = getActiveGroupName();
+        if(ci_saveTemplate.checked){
+          addCustomTemplateToGroup(active, tmpl);
+          appendLog('Custom template saved.');
+        }
+        if(ci_addToLootPool.checked){
+          const copy = JSON.parse(JSON.stringify(tmpl));
+          delete copy._id;
+          LOOT_POOLS[tmpl.rarity] = LOOT_POOLS[tmpl.rarity] || [];
+          LOOT_POOLS[tmpl.rarity].push(copy);
+          appendLog(`Added '${tmpl.name}' to LOOT_POOLS.${tmpl.rarity}`);
+        }
+        if(ci_instantAdd.checked){
+          addItem(tmpl);
+          appendLog('Custom item instantiated into inventory.');
+        }
+        populateDevPanel();
+        populateCustomTemplatesList();
+        renderGroupTabs();
+      };
+
+      // templates list UI
+      function populateCustomTemplatesList(){
+        const data = loadCustomData();
+        const active = data.active || Object.keys(data.groups || {})[0] || 'Default';
+        const list = data.groups && data.groups[active] ? data.groups[active] : [];
+        ci_templatesList.innerHTML = '';
+        if(!list || list.length===0){ ci_templatesList.innerHTML = `<div class="small" style="color:var(--muted)">No custom templates saved in this group.</div>`; return; }
+        list.forEach(t=>{
+          const row = document.createElement('div');
+          row.style.display='flex'; row.style.justifyContent='space-between'; row.style.alignItems='center'; row.style.gap='8px'; row.style.marginBottom='6px';
+          row.innerHTML = `<div><strong>${t.name}</strong> <div class="small" style="color:var(--muted)">${t.desc || ''}</div><div class="small" style="color:var(--muted)">type: ${t.type} • rarity: ${t.rarity}</div></div>`;
+          const right = document.createElement('div'); right.style.display='flex'; right.style.gap='6px';
+          const addBtn = document.createElement('button'); addBtn.className='btn'; addBtn.textContent='Add'; addBtn.onclick = ()=> addItem(t);
+          const previewBtn = document.createElement('button'); previewBtn.className='btn'; previewBtn.textContent='Preview'; previewBtn.onclick = ()=> appendNarrative(`<div><strong>${t.name}</strong><div class="small" style="color:var(--muted)">${t.desc}</div></div>`);
+          const delBtn = document.createElement('button'); delBtn.className='btn'; delBtn.textContent='Delete'; delBtn.onclick = ()=> { if(confirm('Delete template?')){ deleteCustomTemplateByIdFromGroup(active, t._id); populateCustomTemplatesList(); populateDevPanel(); } };
+          right.appendChild(addBtn); right.appendChild(previewBtn); right.appendChild(delBtn);
+          row.appendChild(right);
+          ci_templatesList.appendChild(row);
+        });
+      }
+
+      // group tabs UI
+      function renderGroupTabs(){
+        const data = loadCustomData();
+        const groups = Object.keys(data.groups || {});
+        const active = data.active || groups[0] || 'Default';
+        ci_groupTabs.innerHTML = '';
+        groups.forEach(g=>{
+          const btn = document.createElement('button');
+          btn.className = 'group-tab' + (g === active ? ' active' : '');
+          btn.textContent = g;
+          btn.onclick = ()=> { setActiveGroup(g); renderGroupTabs(); populateCustomTemplatesList(); populateDevPanel(); };
+          ci_groupTabs.appendChild(btn);
+        });
+      }
+
+      ci_newGroupBtn.addEventListener('click', ()=>{
+        const name = prompt('New group name:');
+        if(!name) return;
+        if(addCustomGroup(name)){
+          renderGroupTabs();
+          populateCustomTemplatesList();
+          populateDevPanel();
+        } else alert('Group already exists.');
+      });
+      ci_deleteGroupBtn.addEventListener('click', ()=>{
+        const data = loadCustomData();
+        const active = data.active || Object.keys(data.groups||{})[0];
+        if(!active) return;
+        if(!confirm(`Delete group "${active}" and all its templates?`)) return;
+        deleteCustomGroup(active);
+        renderGroupTabs();
+        populateCustomTemplatesList();
+        populateDevPanel();
+      });
+
+      // export/import for active group
+      ci_exportBtn.addEventListener('click', ()=>{
+        const data = loadCustomData();
+        const active = data.active || Object.keys(data.groups||{})[0];
+        const list = (data.groups && data.groups[active])? data.groups[active] : [];
+        const s = JSON.stringify(list, null, 2);
+        const blob = new Blob([s], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `eoe_templates_${active}.json`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        appendLog(`Exported group "${active}" (${list.length} templates).`);
+      });
+
+      ci_importBtn.addEventListener('click', ()=> ci_importFile.click());
+      ci_importFile.addEventListener('change', (ev)=>{
+        const f = ev.target.files && ev.target.files[0];
+        if(!f) return;
+        const reader = new FileReader();
+        reader.onload = ()=>{
+          try{
+            const parsed = JSON.parse(reader.result);
+            if(!Array.isArray(parsed)) { alert('Imported file must be an array of templates.'); return; }
+            const data = loadCustomData();
+            const active = data.active || Object.keys(data.groups||{})[0] || 'Default';
+            const arr = parsed.map(p=>{ p._id = p._id || ('c_imp_'+Date.now()+'_'+Math.floor(Math.random()*9999)); return p; });
+            data.groups = data.groups || {};
+            data.groups[active] = (data.groups[active] || []).concat(arr);
+            saveCustomData(data);
+            populateCustomTemplatesList();
+            populateDevPanel();
+            appendLog(`Imported ${arr.length} templates into group "${active}".`);
+          } catch(e){
+            alert('Failed to import file: ' + (e.message || e));
+          } finally {
+            ci_importFile.value = '';
+          }
+        };
+        reader.readAsText(f);
+      });
+
+      ci_clearTemplatesBtn.onclick = ()=>{
+        if(!confirm('Clear all saved custom templates in ALL groups? This cannot be undone.')) return;
+        saveCustomData({ active: 'Default', groups: { 'Default': [] } });
+        renderGroupTabs();
+        populateCustomTemplatesList();
+        populateDevPanel();
+        appendLog('Custom templates cleared.');
+      };
+
+      // open drawer button
+      openCustom.addEventListener('click', openDrawer);
+
+      // --- other controls & boot ---
+      function applyDifficultyModifiers(){
+        if(settings.difficulty === 'easy'){ state.dmgMul = 0.8; state.lootBias = 1.2; state.maxHp = 120; }
+        else if(settings.difficulty === 'hard'){ state.dmgMul = 1.25; state.lootBias = 0.75; state.maxHp = 90; }
+        else { state.dmgMul = 1.0; state.lootBias = 1.0; state.maxHp = 100; }
+        if(state.hp > state.maxHp) state.hp = state.maxHp;
+      }
+
+      function seedStartingItems(){
+        addItem({ name:"Traveler's Knife", type:"weapon", attack:3, desc:"A trusty small blade." });
+        addItem({ name:"Small Healing Salve", type:"consumable", hp:12, desc:"Simple herbal salve." });
+        state.coins += 10;
+      }
+
+      function resetState(){
+        clearAutoNext();
+        if(autoplayTimer){ clearInterval(autoplayTimer); autoplayTimer = null; autoplayBtn.textContent = 'Autoplay'; }
+        state = {
+          hp: 100,
+          maxHp: 100,
+          attack: 5,
+          stealth: 3,
+          defense: 0,
+          courage: 0,
+          wisdom: 0,
+          karma: 0,
+          coins: 0,
+          inventory: [],
+          equipped: { weaponId: null, armorId: null, rings: [] },
+          current: 'start',
+          history: [],
+          honorCount: 0,
+          dishonorCount: 0,
+          _undoStack: []
+        };
+        applyDifficultyModifiers();
+        seedStartingItems();
+        recalcStatsFromEquipment();
+        updateUIAll();
+        renderScene(state.current);
+        logEl.innerHTML = '';
+        if(tipInterval) clearInterval(tipInterval);
+        tipInterval = setInterval(showRandomTip, 10000);
+        showRandomTip();
+      }
+
+      function updateUIAll(){ updateStatsDisplay(); updateInventoryUI(); }
+
+      restartBtn.onclick = ()=> { if(autoplayTimer){ clearInterval(autoplayTimer); autoplayTimer=null; autoplayBtn.textContent='Autoplay'; } resetState(); };
+      autoplayBtn.onclick = ()=> {
+        if(autoplayTimer){ clearInterval(autoplayTimer); autoplayTimer = null; autoplayBtn.textContent = 'Autoplay'; return; }
+        autoplayBtn.textContent = 'Stop';
+        autoplayTimer = setInterval(()=>{
+          const nextBtn = document.getElementById('nextBtn');
+          if(nextBtn){ nextBtn.click(); return; }
+          const scene = scenes[state.current];
+          if(!scene){ clearInterval(autoplayTimer); autoplayTimer=null; autoplayBtn.textContent='Autoplay'; return; }
+          const choiceIndex = randInt(0, scene.choices.length-1);
+          const btns = choicesEl.querySelectorAll('button.choice');
+          if(btns[choiceIndex]) btns[choiceIndex].click();
+          if(state.hp <= 0){ clearInterval(autoplayTimer); autoplayTimer=null; autoplayBtn.textContent = 'Autoplay'; }
+        }, 900);
+      };
+
+      // keyboard picks & Next
+      function isTypingInInput(){
+        const el = document.activeElement;
+        if(!el) return false;
+        const tag = el.tagName;
+        if(tag === 'INPUT' || tag === 'TEXTAREA' || el.isContentEditable) return true;
+        return false;
+      }
+
+      document.addEventListener('keydown', (ev)=>{
+        // Do not trigger number selection if user is typing in an input/textarea or contenteditable
+        if(isTypingInInput()) return;
+
+        if(ev.key >= '1' && ev.key <= '4'){
+          const n = Number(ev.key) - 1;
+          const btns = choicesEl.querySelectorAll('button.choice');
+          if(btns[n]) btns[n].click();
+        }
+        if(ev.key.toLowerCase() === 'n'){ const nb = document.getElementById('nextBtn'); if(nb) nb.click(); }
+        if(ev.key === 's' && ev.ctrlKey){ ev.preventDefault(); settingsBtn.click(); }
+      });
+
+      // boot
+      settings = Object.assign({}, defaultSettings);
+      // ensure at least one custom group exists
+      const initialData = loadCustomData();
+      if(!initialData.groups || Object.keys(initialData.groups).length===0) saveCustomData({ active: 'Default', groups: { 'Default': [] } });
+      resetState();
+
+      // expose API for debugging
+      window.Echoes = { state, settings, addItem, generateLoot, resetState, hasPureRelic, hasCorruptedRelic, onlyHonorable, onlyDishonorable, saveSnapshot, undoLast, loadCustomData, saveCustomData };
+
+    })();
+  </script>
+</body>
+</html>
